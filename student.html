@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Dashboard | NOUN Portal</title>
+  <link rel="stylesheet" href="styles.css">
+<style>
+.star-row { display:flex; gap:6px; margin-top:6px; }
+.star { font-size:28px; cursor:pointer; color:#ddd; transition:color 0.15s; user-select:none; }
+.star.active { color:#f59e0b; }
+.star:hover { color:#f59e0b; }
+.fb-display-row { display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border); font-size:14px; }
+.fb-display-row:last-child { border:none; }
+.fb-stars { color:#f59e0b; font-size:16px; }
+</style>
+
+</head>
+<body>
+
+<div class="topbar">
+  <img src="noun.png" alt="NOUN" class="logo">
+  <div class="site-title">
+    National Open University of Nigeria
+    <small>Student Portal</small>
+  </div>
+  <div class="user-chip">
+    <div class="avatar" id="topAvatar">S</div>
+    <span class="uname" id="topName">Student</span>
+  </div>
+  <button class="btn-logout" onclick="DB.logout()">Logout</button>
+</div>
+
+<div class="layout">
+  <nav class="sidebar">
+    <div class="sidebar-section"><span>My Portal</span></div>
+    <a class="active" onclick="show('dashboard')" id="nav-dashboard"><span class="ico">🏠</span> Dashboard</a>
+    <a onclick="show('results')"    id="nav-results">   <span class="ico">📊</span> My Results</a>
+    <a onclick="show('materials')"  id="nav-materials"> <span class="ico">📚</span> Materials</a>
+    <a onclick="show('register')"   id="nav-register">  <span class="ico">📋</span> Register Courses</a>
+    <a onclick="show('feedback')"   id="nav-feedback">  <span class="ico">⭐</span> Feedback</a>
+  </nav>
+
+  <main class="main">
+
+    <!-- DASHBOARD -->
+    <div class="section active" id="section-dashboard">
+      <div class="page-header">
+        <h1 id="welcomeTitle">Welcome!</h1>
+        <p id="welcomeSub"></p>
+      </div>
+      <div class="stat-grid" id="statsGrid"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;flex-wrap:wrap">
+        <div class="card" id="profileCard">
+          <div class="card-header"><h3>👤 Profile</h3></div>
+          <div id="profileContent"></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3>⚡ Quick Actions</h3></div>
+          <div style="display:flex;flex-direction:column;gap:10px;margin-top:4px">
+            <button class="btn btn-primary" onclick="show('results')">📊 View My Results</button>
+            <button class="btn btn-primary" onclick="show('materials')">📚 Download Materials</button>
+            <button class="btn btn-outline" onclick="show('register')">📋 Register Courses</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RESULTS -->
+    <div class="section" id="section-results">
+      <div class="page-header">
+        <h1>My Results</h1>
+        <p>Academic performance overview</p>
+      </div>
+      <div class="stat-grid" id="resultStats"></div>
+      <div class="card">
+        <div class="card-header"><h3>📊 Semester Results</h3></div>
+        <div id="resultsContent"></div>
+      </div>
+    </div>
+
+    <!-- MATERIALS -->
+    <div class="section" id="section-materials">
+      <div class="page-header">
+        <h1>Course Materials</h1>
+        <p>Download study guides, modules, TMA packs and more for your enrolled courses.</p>
+      </div>
+      <div style="display:flex;gap:12px;margin-bottom:18px;flex-wrap:wrap">
+        <div class="field" style="flex:1;min-width:160px">
+          <label>Filter by Course</label>
+          <select id="filterCourse" onchange="renderMaterials()">
+            <option value="">All Courses</option>
+          </select>
+        </div>
+        <div class="field" style="flex:1;min-width:160px">
+          <label>Filter by Type</label>
+          <select id="filterType" onchange="renderMaterials()">
+            <option value="">All Types</option>
+            <option>Study Guide</option><option>Module</option><option>Assessment / TMA</option>
+            <option>Lecture Notes</option><option>Practice Q&A</option><option>Case Studies</option>
+          </select>
+        </div>
+        <div style="display:flex;align-items:flex-end;padding-bottom:2px">
+          <span id="matCount" style="font-size:13px;color:var(--text-muted)"></span>
+        </div>
+      </div>
+      <div id="matsGrid"></div>
+    </div>
+
+    <!-- REGISTER -->
+    <div class="section" id="section-register">
+      <div class="page-header">
+        <h1>Course Registration</h1>
+        <p>Select and register courses for the current semester.</p>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+        <div class="card">
+          <div class="card-header"><h3>📗 Available Courses</h3></div>
+          <div id="availableCourses"></div>
+          <button class="btn btn-primary" style="width:100%;margin-top:14px" onclick="addSelected()">➕ Add Selected</button>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3>✅ My Registration List</h3></div>
+          <div id="registrationList"></div>
+          <div class="card" style="margin-top:14px;background:var(--green-50);box-shadow:none;padding:12px">
+            <span id="unitsTally" style="font-size:13px;font-weight:600;color:var(--green-800)">Total Units: 0</span>
+          </div>
+          <button class="btn btn-primary" style="width:100%;margin-top:12px" onclick="submitRegistration()">🎓 Submit Registration</button>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- FEEDBACK -->
+    <div class="section" id="section-feedback">
+      <div class="page-header">
+        <h1>Share Your Feedback</h1>
+        <p>Rate your experience with the NOUN portal compared to manual registration.</p>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+        <div class="card">
+          <div class="card-header"><h3>⭐ Submit Your Rating</h3></div>
+          <div class="alert alert-error"   id="fb-err"></div>
+          <div class="alert alert-success" id="fb-ok"></div>
+          <div id="fbAlreadyMsg" style="display:none;background:var(--green-50);border:1px solid var(--green-400);border-radius:8px;padding:12px 14px;margin-bottom:14px;font-size:13px;color:var(--green-800)">
+            ✅ You have already submitted feedback. You can update it below.
+          </div>
+          <div class="field" style="margin-bottom:16px">
+            <label>Ease of Use (1 = very difficult, 5 = very easy)</label>
+            <div class="star-row" id="s-ease"></div>
+            <input type="hidden" id="fbEase" value="0">
+          </div>
+          <div class="field" style="margin-bottom:16px">
+            <label>Speed vs Manual Registration (1 = slower, 5 = much faster)</label>
+            <div class="star-row" id="s-speed"></div>
+            <input type="hidden" id="fbSpeed" value="0">
+          </div>
+          <div class="field" style="margin-bottom:16px">
+            <label>Overall Satisfaction (1 = poor, 5 = excellent)</label>
+            <div class="star-row" id="s-sat"></div>
+            <input type="hidden" id="fbSat" value="0">
+          </div>
+          <div class="field" style="margin-bottom:18px">
+            <label>Comments (optional)</label>
+            <textarea id="fbComment" rows="3" style="width:100%;padding:10px 13px;border-radius:8px;border:1.5px solid var(--border);font-family:inherit;font-size:14px;resize:vertical;outline:none" placeholder="Share your thoughts..."></textarea>
+          </div>
+          <button class="btn btn-primary btn-full" onclick="submitFeedback()">Submit Feedback</button>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3>📊 Your Previous Submission</h3></div>
+          <div id="myFeedbackDisplay">
+            <div class="empty-state"><div class="ico">💬</div><p>You haven't submitted feedback yet.</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script src="db.js"></script>
+<script>
+  const user = DB.requireAuth(['student']);
+  const stu  = DB.getStudentByUserId(user.id);
+
+  if (!stu) { alert('Student profile not found. Contact admin.'); DB.logout(); }
+
+  document.getElementById('topName').textContent   = user.name;
+  document.getElementById('topAvatar').textContent = user.name.charAt(0);
+  document.getElementById('welcomeTitle').textContent = 'Welcome, ' + user.name.split(' ')[0] + '!';
+  document.getElementById('welcomeSub').textContent   = stu.matric + ' · ' + stu.department + ' · ' + stu.level + ' Level';
+
+  function show(name) {
+    document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+    document.querySelectorAll('.sidebar a').forEach(a=>a.classList.remove('active'));
+    document.getElementById('section-'+name).classList.add('active');
+    document.getElementById('nav-'+name).classList.add('active');
+    renders[name] && renders[name]();
+  }
+
+  /* ── DASHBOARD ─────────────────────────────────── */
+  function renderDashboard() {
+    const myResults  = DB.getResultsForStudent(stu.id);
+    const myMats     = DB.getMaterialsForStudent(stu.id);
+    const enrolled   = DB.getEnrolledCourses(stu.id);
+
+    document.getElementById('statsGrid').innerHTML = `
+      <div class="stat-card"><div class="ico-box" style="background:#e8f5e9">📗</div><div><div class="val">${enrolled.length}</div><div class="lbl">Enrolled Courses</div></div></div>
+      <div class="stat-card"><div class="ico-box" style="background:#e3f2fd">📊</div><div><div class="val">${DB.calcGPA(stu.id)}</div><div class="lbl">GPA (5.0)</div></div></div>
+      <div class="stat-card"><div class="ico-box" style="background:#fff8e1">📚</div><div><div class="val">${myMats.length}</div><div class="lbl">Materials</div></div></div>
+      <div class="stat-card"><div class="ico-box" style="background:#fce4ec">✅</div><div><div class="val">${myResults.length}</div><div class="lbl">Results</div></div></div>
+    `;
+
+    document.getElementById('profileContent').innerHTML = `
+      <table style="width:100%;font-size:14px">
+        <tr><td style="color:var(--text-muted);padding:6px 0;width:40%">Matric No.</td><td style="font-weight:600">${stu.matric}</td></tr>
+        <tr><td style="color:var(--text-muted);padding:6px 0">Department</td><td>${stu.department}</td></tr>
+        <tr><td style="color:var(--text-muted);padding:6px 0">Level</td><td>${stu.level} Level</td></tr>
+        <tr><td style="color:var(--text-muted);padding:6px 0">Study Centre</td><td>${stu.studyCenter}</td></tr>
+        <tr><td style="color:var(--text-muted);padding:6px 0">Email</td><td>${user.email}</td></tr>
+        <tr><td style="color:var(--text-muted);padding:6px 0">Phone</td><td>${user.phone||'—'}</td></tr>
+      </table>
+    `;
+  }
+
+  /* ── RESULTS ───────────────────────────────────── */
+  function renderResults() {
+    const myResults = DB.getResultsForStudent(stu.id);
+    const gp = {A:5,B:4,C:3,D:2,F:0};
+    const totalUnits = myResults.reduce((s,r)=>{ const c=DB.getCourseById(r.courseId); return s+(c?c.units:3); },0);
+    const avgScore = myResults.length ? Math.round(myResults.reduce((s,r)=>s+r.score,0)/myResults.length) : 0;
+
+    document.getElementById('resultStats').innerHTML = `
+      <div class="stat-card"><div class="ico-box" style="background:#e8f5e9">📊</div><div><div class="val">${myResults.length}</div><div class="lbl">Courses</div></div></div>
+      <div class="stat-card"><div class="ico-box" style="background:#e3f2fd">⭐</div><div><div class="val">${DB.calcGPA(stu.id)}</div><div class="lbl">GPA (5.0)</div></div></div>
+      <div class="stat-card"><div class="ico-box" style="background:#fff8e1">🏅</div><div><div class="val">${totalUnits}</div><div class="lbl">Total Units</div></div></div>
+      <div class="stat-card"><div class="ico-box" style="background:#fce4ec">📈</div><div><div class="val">${avgScore}%</div><div class="lbl">Avg Score</div></div></div>
+    `;
+
+    if (!myResults.length) {
+      document.getElementById('resultsContent').innerHTML = '<div class="empty-state"><div class="ico">📭</div><p>No results available yet. Check back after your lecturer uploads grades.</p></div>';
+      return;
+    }
+
+    const gc = {A:'var(--grade-A)',B:'var(--grade-B)',C:'var(--grade-C)',D:'var(--grade-D)',F:'var(--grade-F)'};
+    // Group by semester
+    const bySem = {};
+    myResults.forEach(r => {
+      if (!bySem[r.semester]) bySem[r.semester]=[];
+      bySem[r.semester].push(r);
+    });
+
+    let html = '';
+    Object.keys(bySem).forEach(sem => {
+      const rows = bySem[sem];
+      html += `<h4 style="font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);margin:18px 0 8px">${sem}</h4>
+      <table>
+        <thead><tr><th>Code</th><th>Course Title</th><th>Units</th><th>Score</th><th>Grade</th></tr></thead>
+        <tbody>${rows.map(r=>{
+          const c   = DB.getCourseById(r.courseId)||{};
+          const fill= r.score>=70?'#43a047':r.score>=50?'#fb8c00':'#e53935';
+          return `<tr>
+            <td class="mono">${c.code||'—'}</td>
+            <td>${c.title||'—'}</td>
+            <td style="text-align:center">${c.units||3}</td>
+            <td><div class="score-bar-row"><span style="width:32px;font-weight:600">${r.score}</span>
+              <div class="score-bar"><div class="score-bar-fill" style="width:${r.score}%;background:${fill}"></div></div></div></td>
+            <td><div class="grade-badge" style="background:${gc[r.grade]||'#333'}">${r.grade}</div></td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table>`;
+    });
+    document.getElementById('resultsContent').innerHTML = html;
+  }
+
+  /* ── MATERIALS ─────────────────────────────────── */
+  let allMyMats = [];
+
+  function renderMaterials() {
+    allMyMats = DB.getMaterialsForStudent(stu.id);
+    const courseFilter = document.getElementById('filterCourse').value;
+    const typeFilter   = document.getElementById('filterType').value;
+
+    // Populate course filter
+    const enrolled = DB.getEnrolledCourses(stu.id);
+    document.getElementById('filterCourse').innerHTML = '<option value="">All Courses</option>' +
+      enrolled.map(c=>`<option value="${c.id}" ${courseFilter===c.id?'selected':''}>${c.code} — ${c.title}</option>`).join('');
+
+    const filtered = allMyMats.filter(m =>
+      (!courseFilter || m.courseId===courseFilter) &&
+      (!typeFilter   || m.type===typeFilter)
+    );
+
+    document.getElementById('matCount').textContent = filtered.length+' file'+(filtered.length!==1?'s':'');
+
+    const el = document.getElementById('matsGrid');
+    if (!filtered.length && !allMyMats.length) {
+      el.innerHTML='<div class="empty-state"><div class="ico">📭</div><p>No materials available yet for your enrolled courses. Your lecturer will upload them soon.</p></div>';
+      return;
+    }
+    if (!filtered.length) {
+      el.innerHTML='<div class="empty-state"><div class="ico">🔍</div><p>No materials match this filter.</p></div>';
+      return;
+    }
+
+    const typeColors = {'Study Guide':'#e8f5e9','Module':'#e3f2fd','Assessment / TMA':'#fff3e0','Lecture Notes':'#f3e5f5','Practice Q&A':'#fce4ec','Case Studies':'#e0f2f1'};
+    el.innerHTML='<div class="mat-grid">'+filtered.map(m=>{
+      const c=DB.getCourseById(m.courseId)||{};
+      const tc = typeColors[m.type]||'#f5f5f5';
+      return `<div class="mat-card">
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <span class="badge badge-student">${c.code||'—'}</span>
+          <span class="badge" style="background:${tc};color:#333">${m.type}</span>
+        </div>
+        <h4>${m.title}</h4>
+        <div class="meta">📄 ${m.filename} · ${m.size}</div>
+        <div class="meta">Uploaded by ${m.uploaderName} · ${m.uploadedAt}</div>
+        <a href="${m.data}" download="${m.filename}" class="btn btn-primary btn-sm dl-btn">⬇ Download</a>
+      </div>`;
+    }).join('')+'</div>';
+  }
+
+  /* ── REGISTER ──────────────────────────────────── */
+  let regList = new Set();
+
+  function renderRegister() {
+    const allCourses = DB.getCourses();
+    const enrolled   = DB.getEnrolledCourses(stu.id).map(c=>c.id);
+
+    // Init reg list with already enrolled courses
+    if (regList.size===0) enrolled.forEach(id=>regList.add(id));
+
+    document.getElementById('availableCourses').innerHTML = allCourses.map(c=>`
+      <div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)">
+        <input type="checkbox" id="chk_${c.id}" value="${c.id}" ${regList.has(c.id)?'checked':''} ${enrolled.includes(c.id)?'disabled':''} style="width:16px;height:16px;accent-color:var(--green-700)">
+        <label for="chk_${c.id}" style="flex:1;cursor:pointer;font-size:14px">
+          <strong class="mono" style="font-size:13px">${c.code}</strong> — ${c.title}
+          ${enrolled.includes(c.id)?'<span style="font-size:11px;color:var(--text-muted);margin-left:6px">✓ Enrolled</span>':''}
+        </label>
+        <span style="font-size:12px;color:var(--text-muted)">${c.units}u</span>
+      </div>
+    `).join('');
+
+    updateRegList();
+  }
+
+  function addSelected() {
+    document.querySelectorAll('#availableCourses input[type=checkbox]:checked:not(:disabled)').forEach(cb=>regList.add(cb.value));
+    updateRegList();
+  }
+
+  function updateRegList() {
+    const enrolled = DB.getEnrolledCourses(stu.id).map(c=>c.id);
+    const ids = [...regList];
+    let totalUnits = 0;
+    const listHtml = ids.map(id=>{
+      const c = DB.getCourseById(id)||{code:id,title:'Unknown',units:0};
+      totalUnits += c.units||0;
+      const isExisting = enrolled.includes(id);
+      return `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:14px">
+        <span><strong class="mono" style="font-size:12px">${c.code}</strong> — ${c.title}</span>
+        ${isExisting
+          ? '<span style="font-size:11px;color:var(--text-muted)">Already enrolled</span>'
+          : `<button class="btn btn-danger btn-sm" onclick="removeFromReg('${id}')">✕</button>`}
+      </div>`;
+    });
+    document.getElementById('registrationList').innerHTML = ids.length
+      ? listHtml.join('')
+      : '<div class="empty-state" style="padding:20px"><p>No courses selected yet.</p></div>';
+    document.getElementById('unitsTally').textContent = `Total Units: ${totalUnits} / 24 max`;
+  }
+
+  function removeFromReg(id) {
+    const enrolled = DB.getEnrolledCourses(stu.id).map(c=>c.id);
+    if (enrolled.includes(id)) return;
+    regList.delete(id);
+    updateRegList();
+    renderRegister();
+  }
+
+  function submitRegistration() {
+    const enrolled = DB.getEnrolledCourses(stu.id).map(c=>c.id);
+    const newOnes  = [...regList].filter(id=>!enrolled.includes(id));
+    if (!newOnes.length) { alert('No new courses to register.'); return; }
+    newOnes.forEach(id => DB.enroll(stu.id, id));
+    alert('✅ Registration submitted!\n\nNew courses registered:\n' + newOnes.map(id=>{ const c=DB.getCourseById(id); return c?c.code+' — '+c.title:id; }).join('\n'));
+    renderRegister();
+  }
+
+
+  /* ── FEEDBACK ──────────────────────────────────── */
+  function buildStars(containerId, hiddenId) {
+    const row = document.getElementById(containerId);
+    row.innerHTML = '';
+    for (let i = 1; i <= 5; i++) {
+      const span = document.createElement('span');
+      span.className = 'star';
+      span.textContent = '★';
+      span.dataset.val = i;
+      span.onclick = () => setStars(containerId, hiddenId, i);
+      span.onmouseover = () => hoverStars(containerId, i);
+      span.onmouseout  = () => resetStars(containerId, hiddenId);
+      row.appendChild(span);
+    }
+  }
+
+  function setStars(containerId, hiddenId, val) {
+    document.getElementById(hiddenId).value = val;
+    updateStarDisplay(containerId, val);
+  }
+
+  function hoverStars(containerId, val) {
+    document.querySelectorAll('#'+containerId+' .star').forEach((s,i) => {
+      s.classList.toggle('active', i < val);
+    });
+  }
+
+  function resetStars(containerId, hiddenId) {
+    const val = parseInt(document.getElementById(hiddenId).value) || 0;
+    updateStarDisplay(containerId, val);
+  }
+
+  function updateStarDisplay(containerId, val) {
+    document.querySelectorAll('#'+containerId+' .star').forEach((s,i) => {
+      s.classList.toggle('active', i < val);
+    });
+  }
+
+  function starsHtml(val) {
+    return Array.from({length:5},(_,i)=>`<span style="color:${i<val?'#f59e0b':'#ddd'};font-size:18px">★</span>`).join('');
+  }
+
+  function renderFeedback() {
+    buildStars('s-ease','fbEase');
+    buildStars('s-speed','fbSpeed');
+    buildStars('s-sat','fbSat');
+
+    const existing = DB.getUserFeedback(user.id);
+    if (existing) {
+      document.getElementById('fbAlreadyMsg').style.display='block';
+      document.getElementById('fbEase').value  = existing.easeOfUse;
+      document.getElementById('fbSpeed').value = existing.speed;
+      document.getElementById('fbSat').value   = existing.satisfaction;
+      document.getElementById('fbComment').value = existing.comments||'';
+      updateStarDisplay('s-ease',  existing.easeOfUse);
+      updateStarDisplay('s-speed', existing.speed);
+      updateStarDisplay('s-sat',   existing.satisfaction);
+      document.getElementById('myFeedbackDisplay').innerHTML = `
+        <div class="fb-display-row"><span>Ease of Use</span><span class="fb-stars">${starsHtml(existing.easeOfUse)} <strong>${existing.easeOfUse}/5</strong></span></div>
+        <div class="fb-display-row"><span>Speed vs Manual</span><span class="fb-stars">${starsHtml(existing.speed)} <strong>${existing.speed}/5</strong></span></div>
+        <div class="fb-display-row"><span>Overall Satisfaction</span><span class="fb-stars">${starsHtml(existing.satisfaction)} <strong>${existing.satisfaction}/5</strong></span></div>
+        <div class="fb-display-row"><span>Comments</span><span style="font-size:13px;color:var(--text-muted);max-width:200px;text-align:right">${existing.comments||'—'}</span></div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:10px">Submitted: ${existing.submittedAt}</div>`;
+    }
+  }
+
+  function submitFeedback() {
+    const ease = parseInt(document.getElementById('fbEase').value);
+    const spd  = parseInt(document.getElementById('fbSpeed').value);
+    const sat  = parseInt(document.getElementById('fbSat').value);
+    const comments = document.getElementById('fbComment').value.trim();
+    const err = document.getElementById('fb-err');
+    const ok  = document.getElementById('fb-ok');
+    err.classList.remove('show'); ok.classList.remove('show');
+    if (!ease||!spd||!sat) { err.textContent='⚠ Please rate all three categories.'; err.classList.add('show'); return; }
+    DB.submitFeedback({ userId: user.id, userName: user.name, role: user.role, easeOfUse: ease, speed: spd, satisfaction: sat, comments });
+    ok.textContent = '✅ Thank you! Your feedback has been recorded.';
+    ok.classList.add('show');
+    renderFeedback();
+  }
+
+  const renders = {
+    dashboard: renderDashboard,
+    results: renderResults,
+    materials: renderMaterials,
+    register: renderRegister,
+    feedback: renderFeedback
+  };
+
+  renderDashboard();
+</script>
+</body>
+</html>

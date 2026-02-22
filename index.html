@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login | NOUN Course Portal</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="login-wrap">
+  <div class="login-header">
+    <img src="noun.png" alt="NOUN Logo">
+    <h1>National Open University of Nigeria</h1>
+    <p>Course Registration Portal</p>
+  </div>
+
+  <div class="login-card">
+    <h2>Welcome Back</h2>
+    <p class="sub">Sign in to access your portal</p>
+
+    <div class="alert alert-error" id="errMsg">⚠ Invalid credentials. Please check and try again.</div>
+
+    <div class="field" style="margin-bottom:16px">
+      <label>Username</label>
+      <input type="text" id="u" placeholder="Enter username" autocomplete="username">
+    </div>
+    <div class="field" style="margin-bottom:16px">
+      <label>Password</label>
+      <input type="password" id="p" placeholder="Enter password" autocomplete="current-password">
+    </div>
+    <div class="field" style="margin-bottom:20px">
+      <label>Role</label>
+      <select id="r">
+        <option value="">— Select role —</option>
+        <option value="student">Student</option>
+        <option value="lecturer">Lecturer</option>
+        <option value="admin">Admin</option>
+      </select>
+    </div>
+    <button class="btn btn-primary btn-full" onclick="doLogin()">Sign In →</button>
+  </div>
+
+  <p style="color:rgba(255,255,255,0.25);font-size:12px;text-align:center">
+    Default admin: <code style="color:rgba(255,255,255,0.45)">admin / ********</code><br>
+    Students &amp; Lecturers are created by the Admin.
+  </p>
+</div>
+
+<script src="db.js"></script>
+<script>
+  // If already logged in, redirect
+  const sess = sessionStorage.getItem('noun_session');
+  if (sess) {
+    try {
+      const u = JSON.parse(sess);
+      if (u.role==='admin') location.href='admin.html';
+      else if (u.role==='lecturer') location.href='lecturer.html';
+      else location.href='student.html';
+    } catch(e) {}
+  }
+
+  function doLogin() {
+    const username = document.getElementById('u').value.trim();
+    const password = document.getElementById('p').value;
+    const role     = document.getElementById('r').value;
+    const err      = document.getElementById('errMsg');
+    err.classList.remove('show');
+    if (!username || !password || !role) { err.textContent = '⚠ Please fill in all fields.'; err.classList.add('show'); return; }
+    const user = DB.login(username, password, role);
+    if (!user) { err.textContent = '⚠ Invalid credentials. Please check and try again.'; err.classList.add('show'); return; }
+    sessionStorage.setItem('noun_session', JSON.stringify(user));
+    if (role==='admin')    location.href = 'admin.html';
+    else if (role==='lecturer') location.href = 'lecturer.html';
+    else location.href = 'student.html';
+  }
+
+  document.addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+</script>
+</body>
+</html>
