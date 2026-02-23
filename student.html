@@ -19,6 +19,7 @@
 <body>
 
 <div class="topbar">
+  <button class="menu-toggle" id="menuToggle" aria-label="Open student menu" aria-expanded="false" aria-controls="studentSidebar">☰</button>
   <img src="noun.png" alt="NOUN" class="logo">
   <div class="site-title">
     National Open University of Nigeria
@@ -32,7 +33,7 @@
 </div>
 
 <div class="layout">
-  <nav class="sidebar">
+  <nav class="sidebar" id="studentSidebar">
     <div class="sidebar-section"><span>My Portal</span></div>
     <a class="active" onclick="show('dashboard')" id="nav-dashboard"><span class="ico">🏠</span> Dashboard</a>
     <a onclick="show('results')"    id="nav-results">   <span class="ico">📊</span> My Results</a>
@@ -40,6 +41,7 @@
     <a onclick="show('register')"   id="nav-register">  <span class="ico">📋</span> Register Courses</a>
     <a onclick="show('feedback')"   id="nav-feedback">  <span class="ico">⭐</span> Feedback</a>
   </nav>
+  <button class="sidebar-overlay" id="sidebarOverlay" aria-label="Close student menu"></button>
 
   <main class="main">
 
@@ -182,6 +184,10 @@
 <script>
   const user = DB.requireAuth(['student']);
   const stu  = DB.getStudentByUserId(user.id);
+  const menuToggle = document.getElementById('menuToggle');
+  const sidebar = document.getElementById('studentSidebar');
+  const sidebarOverlay = document.getElementById('sidebarOverlay');
+  const mobileMenuMedia = window.matchMedia('(max-width: 560px)');
 
   if (!stu) { alert('Student profile not found. Contact admin.'); DB.logout(); }
 
@@ -190,11 +196,29 @@
   document.getElementById('welcomeTitle').textContent = 'Welcome, ' + user.name.split(' ')[0] + '!';
   document.getElementById('welcomeSub').textContent   = stu.matric + ' · ' + stu.department + ' · ' + stu.level + ' Level';
 
+  function closeMobileMenu() {
+    sidebar.classList.remove('open');
+    document.body.classList.remove('menu-open');
+    menuToggle.setAttribute('aria-expanded', 'false');
+  }
+
+  function toggleMobileMenu() {
+    const willOpen = !sidebar.classList.contains('open');
+    sidebar.classList.toggle('open', willOpen);
+    document.body.classList.toggle('menu-open', willOpen);
+    menuToggle.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+  }
+
+  menuToggle.addEventListener('click', toggleMobileMenu);
+  sidebarOverlay.addEventListener('click', closeMobileMenu);
+  mobileMenuMedia.addEventListener('change', e => { if (!e.matches) closeMobileMenu(); });
+
   function show(name) {
     document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
     document.querySelectorAll('.sidebar a').forEach(a=>a.classList.remove('active'));
     document.getElementById('section-'+name).classList.add('active');
     document.getElementById('nav-'+name).classList.add('active');
+    if (mobileMenuMedia.matches) closeMobileMenu();
     renders[name] && renders[name]();
   }
 

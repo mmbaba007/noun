@@ -19,6 +19,7 @@
 <body>
 
 <div class="topbar">
+  <button class="menu-toggle" id="menuToggle" aria-label="Open lecturer menu" aria-expanded="false" aria-controls="lecturerSidebar">☰</button>
   <img src="noun.png" alt="NOUN" class="logo">
   <div class="site-title">
     National Open University of Nigeria
@@ -32,7 +33,7 @@
 </div>
 
 <div class="layout">
-  <nav class="sidebar">
+  <nav class="sidebar" id="lecturerSidebar">
     <div class="sidebar-section"><span>Main</span></div>
     <a class="active" onclick="show('overview')"  id="nav-overview"> <span class="ico">🏠</span> Overview</a>
     <div class="sidebar-section"><span>Academic</span></div>
@@ -42,6 +43,7 @@
     <a onclick="show('audit')"      id="nav-audit">     <span class="ico">🔍</span> Audit Trail</a>
     <a onclick="show('feedback')"   id="nav-feedback">  <span class="ico">⭐</span> Feedback</a>
   </nav>
+  <button class="sidebar-overlay" id="sidebarOverlay" aria-label="Close lecturer menu"></button>
 
   <main class="main">
 
@@ -186,6 +188,10 @@
 <script>
   const user = DB.requireAuth(['lecturer']);
   const lec  = DB.getLecturerByUserId(user.id);
+  const menuToggle = document.getElementById('menuToggle');
+  const sidebar = document.getElementById('lecturerSidebar');
+  const sidebarOverlay = document.getElementById('sidebarOverlay');
+  const mobileMenuMedia = window.matchMedia('(max-width: 560px)');
 
   document.getElementById('topName').textContent    = user.name;
   document.getElementById('topAvatar').textContent  = user.name.charAt(0);
@@ -195,11 +201,29 @@
   const myCourses = lec ? DB.getCoursesForLecturer(lec.id) : [];
   const myCourseIds = myCourses.map(c=>c.id);
 
+  function closeMobileMenu() {
+    sidebar.classList.remove('open');
+    document.body.classList.remove('menu-open');
+    menuToggle.setAttribute('aria-expanded', 'false');
+  }
+
+  function toggleMobileMenu() {
+    const willOpen = !sidebar.classList.contains('open');
+    sidebar.classList.toggle('open', willOpen);
+    document.body.classList.toggle('menu-open', willOpen);
+    menuToggle.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+  }
+
+  menuToggle.addEventListener('click', toggleMobileMenu);
+  sidebarOverlay.addEventListener('click', closeMobileMenu);
+  mobileMenuMedia.addEventListener('change', e => { if (!e.matches) closeMobileMenu(); });
+
   function show(name) {
     document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
     document.querySelectorAll('.sidebar a').forEach(a=>a.classList.remove('active'));
     document.getElementById('section-'+name).classList.add('active');
     document.getElementById('nav-'+name).classList.add('active');
+    if (mobileMenuMedia.matches) closeMobileMenu();
     renders[name] && renders[name]();
   }
 

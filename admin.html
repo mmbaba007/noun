@@ -9,6 +9,7 @@
 <body>
 
 <div class="topbar">
+  <button class="menu-toggle" id="menuToggle" aria-label="Open admin menu" aria-expanded="false" aria-controls="adminSidebar">☰</button>
   <img src="noun.png" alt="NOUN" class="logo">
   <div class="site-title">
     National Open University of Nigeria
@@ -22,7 +23,7 @@
 </div>
 
 <div class="layout">
-  <nav class="sidebar">
+  <nav class="sidebar" id="adminSidebar">
     <div class="sidebar-section"><span>Main</span></div>
     <a class="active" onclick="show('overview')"  id="nav-overview">  <span class="ico">🏠</span> Overview</a>
     <div class="sidebar-section"><span>Users</span></div>
@@ -37,6 +38,7 @@
     <a onclick="show('feedback')"   id="nav-feedback">  <span class="ico">⭐</span> User Feedback</a>
     <a onclick="show('references')" id="nav-references"><span class="ico">📖</span> References</a>
   </nav>
+  <button class="sidebar-overlay" id="sidebarOverlay" aria-label="Close admin menu"></button>
 
   <main class="main">
 
@@ -283,8 +285,29 @@
 <script src="db.js"></script>
 <script>
   const user = DB.requireAuth(['admin']);
+  const menuToggle = document.getElementById('menuToggle');
+  const sidebar = document.getElementById('adminSidebar');
+  const sidebarOverlay = document.getElementById('sidebarOverlay');
+  const mobileMenuMedia = window.matchMedia('(max-width: 560px)');
 
   document.getElementById('dateNow').textContent = new Date().toDateString();
+
+  function closeMobileMenu() {
+    sidebar.classList.remove('open');
+    document.body.classList.remove('menu-open');
+    menuToggle.setAttribute('aria-expanded', 'false');
+  }
+
+  function toggleMobileMenu() {
+    const willOpen = !sidebar.classList.contains('open');
+    sidebar.classList.toggle('open', willOpen);
+    document.body.classList.toggle('menu-open', willOpen);
+    menuToggle.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+  }
+
+  menuToggle.addEventListener('click', toggleMobileMenu);
+  sidebarOverlay.addEventListener('click', closeMobileMenu);
+  mobileMenuMedia.addEventListener('change', e => { if (!e.matches) closeMobileMenu(); });
 
   /* ─── SECTION TOGGLE ─────────────────────────────── */
   function show(name) {
@@ -292,6 +315,7 @@
     document.querySelectorAll('.sidebar a').forEach(a => a.classList.remove('active'));
     document.getElementById('section-'+name).classList.add('active');
     document.getElementById('nav-'+name).classList.add('active');
+    if (mobileMenuMedia.matches) closeMobileMenu();
     renders[name] && renders[name]();
   }
 
